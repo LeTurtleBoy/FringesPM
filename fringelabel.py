@@ -236,6 +236,4 @@ class FringeAnalysis:
         im.save(name_aux[0] + "_del." + name_aux[1])
 
 
-fa = FringeAnalysis()
-fa.load_image("590kx_WF_RD30_07_skeleton.tif")
-fa.process_lc()
+
