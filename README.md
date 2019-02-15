@@ -23,7 +23,7 @@ fa.process_lc()
 - skimage
 - PIL
 - pandas
-console_progressbar 
+- console_progressbar 
 
 #### installing requirements:
 
