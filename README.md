@@ -17,6 +17,19 @@ fa.process_lc()
 # fa.process_inter_distance() #Comming soon
 
 ```
+### requirements:
+- cv2
+- numpy
+- skimage
+- PIL
+- pandas
+console_progressbar 
+
+#### installing requirements:
+
+```
+pip install -r requirements.txt
+```
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
