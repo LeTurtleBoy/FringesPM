@@ -3,6 +3,7 @@ from skimage import measure, morphology
 from PIL import Image
 import pandas as pd
 from console_progressbar import ProgressBar
+import os.path
 
 
 class FringeAnalysis:
@@ -256,5 +257,19 @@ class FringeAnalysis:
     def process_inter_distance(self, dir_image):
         name_aux = dir_image.split('.')
         print("Loading {} vertical and horizontal...".format(dir_image[0]))
-        self.image_v = Image.open(name_aux[0] + "_v." + name_aux[1])
-        self.image_h = Image.open(name_aux[0] + "_h." + name_aux[1])
+        
+        if os.path.isfile(name_aux[0] + "_v." + name_aux[1]):
+            self.image_v = self.bin_array(Image.open(name_aux[0] + "_v." + name_aux[1]), 1)
+            self.image_v = measure.label(self.image_v)
+        if os.path.isfile(name_aux[0] + "_h." + name_aux[1]):
+            self.image_h = self.bin_array(Image.open(name_aux[0] + "_h." + name_aux[1]), 1)
+            self.image_h = measure.label(self.image_h)
+        if (self.image_v == []):
+            print("no hay imagenes verticales")
+        if( self.image_h == []):
+            print("no hay imagenes horizontales")
+        if ( (self.image_v == []) &  (self.image_h==[] )):
+            print("No hay imagenes procesadas Horizontales o Verticales")
+            return 0
+        
+        
