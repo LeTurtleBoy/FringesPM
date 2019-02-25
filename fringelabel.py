@@ -168,9 +168,9 @@ class FringeAnalysis:
                 img_aux = region.image
                 base = np.zeros([len(img_aux) + 2, len(img_aux[0]) + 2])
                 x = 0
-                for row in img_aux:
+                for pixinfo in img_aux:
                     y = 0
-                    for element in row:
+                    for element in pixinfo:
                         base[x + 1][y + 1] = 1 if element else 0
                         y += 1
                     x += 1
@@ -192,8 +192,8 @@ class FringeAnalysis:
                 k = 0
                 alpha = []
                 omega = []
-                for row in aux:
-                    coords = [i for (i, val) in enumerate(row) if val == 1]
+                for pixinfo in aux:
+                    coords = [i for (i, val) in enumerate(pixinfo) if val == 1]
                     if len(coords) != 0:
                         k += 1
                         if len(coords) == 2:
@@ -205,7 +205,7 @@ class FringeAnalysis:
                                 alpha = [coords[0], u]
                             if k == 2:
                                 omega = [coords[0], u]
-                    triple = [i for (i, val) in enumerate(row) if val == 3]
+                    triple = [i for (i, val) in enumerate(pixinfo) if val == 3]
                     if len(triple) != 0:
                         k = 3
                     u += 1
@@ -273,70 +273,83 @@ class FringeAnalysis:
         if ( (self.image_v == []) &  (self.image_h==[] )):
             print("No hay imagenes procesadas Horizontales o Verticales")
             return 0
-        
+
     def process_id(self, mode):
         if mode == "Horizontal":
-            I, J = np.nonzero(self.image_h)
-            F = [[0, 0, 0]]*len(I)
-            for x in range(len(I)):
-                F[x]= [self.image_h[I[x]][J[x]],I[x],J[x]]
-            df =  pd.DataFrame(F,columns = ['Fringe_label','x','y'])
-            print(df.head())
-            groups = df.groupby('Fringe_label')
-            data_size = len(groups.groups)
-            Vector = [0]*data_size
-            u = 0
-            for ref, df in groups:
-                Vector[u] = df.values
-                u+=1
-
-            pure_data = []
-            n = 0
-            for i in range(len(Vector)):
-                name = "process fringe " + str(i+1) + " of "+ str(len(Vector)-1) + " possible couples"
-                total_it = len(Vector) - i
-                pb = ProgressBar(total = total_it, prefix = name,suffix='Ok', decimals=3, length=50, fill='X',zfill='-')
-                for j in range(i+1, len(Vector)):
-                    pb.print_progress_bar(j-i)
-                    l = 0
-                    base = Vector[i]
-                    aux = Vector[j]
-                    aux_data = []
-                    for row in base:
-                        for row_ in aux:
-                            a = row[1]-row_[1]
-                            b = row[2]-row_[2]
-                            if a == 0: angle = np.pi/2 * np.sign(b)
-                            elif b == 0: angle = np.pi * int(x<0)
-                            else: angle = np.arctan(b/a) 
-                            angle = angle*(180.0 / np.pi)
-                            distance = np.sqrt((a)**2 + (b)**2)
-                            if ((distance > 60) | (-45 > angle) | (angle < 45)):
-                                pass
-                            else:
-                                if aux_data == []:
-                                    aux_data = [row,np.append(row_,[distance, angle])]
+            info_image_struct = measure.regionprops(self.image_h, coordinates='xy')
+            for region in info_image_struct:
+                image_masked = self.image_h.copy()
+                aux = np.zeros((len(image_masked), len(image_masked[0])))
+                n = 100
+                aux[(region.bbox[0] - n ) : ( region.bbox[2] + n),
+                    (region.bbox[1] - n ) : ( region.bbox[3] + n)] = 1
+                image_masked[aux==0] = 0
+                I, J = np.nonzero(image_masked)
+                F = [[0, 0, 0]]*len(I)
+                for x in range(len(I)):
+                    F[x]= [image_masked[I[x]][J[x]],I[x],J[x]]
+                df =  pd.DataFrame(F,columns = ['Fringe_label','x','y'])
+                groups = df.groupby('Fringe_label')
+                data_size = len(groups.groups)
+                Vector = [0]*data_size
+                u = 0
+                for ref, df in groups:
+                    Vector[u] = df.values
+                    u+=1
+                pure_data = []
+                n = 0
+                for i in range(1):
+                    name = "process fringe " + str(region.label) + " with "+ str(len(Vector)-1) + " possible couples"
+                    total_it = len(Vector) - i
+                    pb = ProgressBar(total = total_it, prefix = name,suffix='Ok', decimals=3, length=50, fill='X',zfill='-')
+                    for j in range(i+1, len(Vector)):
+                        pb.print_progress_bar(j-i)
+                        l = 0
+                        base = Vector[i]
+                        aux = Vector[j]
+                        for pixinfo in base:
+                            aux_data = []
+                            old_distance = 0
+                            for pixinfo_ in aux:
+                                a = pixinfo_[1]-pixinfo[1]
+                                b = pixinfo_[2]-pixinfo[2]
+                                if a == 0: 
+                                    angle = np.pi/2 * np.sign(b)
+                                elif b == 0: 
+                                    angle = np.pi * int(x<0)
+                                else: 
+                                    angle = np.arctan(b/a)
+                                # Necessary rotation to reference in traditional coords(x,y)
+                                angle = angle - (np.pi/2)
+                                angle = angle*(180.0 / np.pi)
+                                distance = np.sqrt((a)**2 + (b)**2)
+                                if ((distance > 60) | (angle > 135) | (angle < -135) | ((angle < 45) & (angle >  -45))):
+                                    break
                                 else:
-                                    aux_data.append([row,np.append(row_,[distance, angle])])
-                                l-=-1
-                    if (aux_data != []):
-+
-                        if  pure_data != []:
-                            pure_data.append(aux_data)
-                        else:
-                            pure_data = aux_data
-                        n-=-1
-                pb.print_progress_bar(total_it)
-                break
-            Datos = []
-            for i in pure_data:
-                if i != 0: 
-                    Datos.append(i)
+                                    if aux_data == []:
+                                        aux_data = [pixinfo[0],pixinfo[1],pixinfo[2],pixinfo_[0],pixinfo_[1],pixinfo_[2],distance, angle]
+                                        old_distance = distance
+                                    else:
+                                        if distance < old_distance:
+                                            aux_data = [pixinfo[0],pixinfo[1],pixinfo[2],pixinfo_[0],pixinfo_[1],pixinfo_[2],distance, angle]
+                                            old_distance = distance
+                                    l-=-1
+                            if (aux_data != []):
+                                if  pure_data != []:
+                                    pure_data.append(aux_data)
+                                else:
+                                    pure_data = [aux_data]
+                                n-=-1
+                    pb.print_progress_bar(total_it)
+                if pure_data != []:
+                    a = pd.DataFrame(pure_data)
+                    a.to_excel("indis_fringe"+str(region.label)+".xlsx", index=False)
+                else:
+                    print("not fringe in range for interplanar distance")
+                self.image_h = np.where(self.image_h == region.label, 0,  self.image_h)
 
-            print("Done")
-            a = pd.DataFrame(Datos)
-            a.to_excel("indis.xlsx", index=False)
-            print("final i guess?")
+                
+
 
                      
 
