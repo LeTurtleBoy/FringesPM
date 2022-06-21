@@ -1,6 +1,6 @@
 opencv-python == 4.0.0.21
 pillow>=7.1.0
-numpy == 1.15.1
+numpy == 1.22.0
 scikit-image == 0.14.2
 pandas == 0.23.4
 console_progressbar == 1.1.1
