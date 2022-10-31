@@ -9,12 +9,15 @@ feel free to use it in the name of science.
 ## Usage
 
 ```python
-import fringelabel as fringe
+from modules.fringelabel import FringeAnalysis
+import warnings
 
-fa = fringe.FringeAnalysis()
-fa.load_image("590kx_WF_RD30_07_skeleton.tif")
-fa.process_lc()
-# fa.process_inter_distance() #Comming soon
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
+
+fringe = FringeAnalysis()
+fringe.load_image("Images/Process/590kx_WF_RD30_07_skeleton_Filtrado.tif")
+fringe.process_lc()
 
 ```
 ### requirements:
